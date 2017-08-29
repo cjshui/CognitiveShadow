@@ -14,6 +14,7 @@ class classifier:
         """
         :param dataFile: file want to loaded, by defaut, as the CG model in thales
         :param dataIndex: the dataIdx is the data we want to treat, example: dataIdx = range(60), dataIdx = [5]
+
         """
         self.data = dataFile
         self.problemIndx = np.array([5, 33, 41, 47, 58])
@@ -39,7 +40,7 @@ class classifier:
 
         self.predication = []
 
-    def OnlineSvmFit(self, X, y, lam = 0.1, rate=0.05):
+    def OnlineSvmFit(self, X, y, lam = 0.1, rate=0.1):
         """
         This part we will develop the linear svm part for online optimization
         :param X : the global input (with dim T*N), here the data comes in streaming way, X_1*, X_2*....
@@ -53,11 +54,12 @@ class classifier:
         K = np.max(y)
         T = X.shape[0]
         dim = X.shape[1]  # feature dim
-        W = np.ones([dim, K]) # diim* K coefficient vectors
+        W = 1/(np.sqrt(dim+1))*np.ones([dim+1, K])  # dim* (K+1) coefficient vectors
         realTimePred = np.zeros(T)
 
         for t in range(T):
-            x_t = X[t,:]
+            x_t = np.ones(dim+1)
+            x_t[1:] = X[t,:]
             score = np.dot(W.T,x_t)
             realTimePred[t] = np.argmax(score) + 1
 
@@ -99,12 +101,15 @@ class classifier:
 def main():
     data = np.load('data_d_co.npy')
     cf = classifier(data,dataIndex=range(60))
-
-
+    #XTrain = cf.data[:,3:8]
+    #YTrain = cf.data[:,1]
+    #YTrue  = cf.data[:,2]
+    #predication = cf.OnlineSvmFit(XTrain, YTrain)
     predication = cf.OnlineSvmFit(cf.usrOriState[0],cf.usrDecision[0])
-    flag = predication!=cf.groundTruth[0]
-    print(flag)
-    print(np.sum(predication==cf.groundTruth[0])/len(predication))
+    #flag = predication!=cf.groundTruth[0]
+    #print(flag)
+    print(np.sum(predication==cf.groundTruth[0])/len(cf.groundTruth[0]))
+    #print(np.sum(predication==YTrue)/len(YTrue))
 
 
 if __name__ == "__main__":
