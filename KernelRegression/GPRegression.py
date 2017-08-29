@@ -56,7 +56,7 @@ class GPregrssor:
         """
 
         T = X.shape[0]
-        parameter = np.zeros([T-1,2])
+        #parameter = np.zeros([T-1,2])
         alert = np.zeros(T-1)
 
         for t in np.arange(1,T):
@@ -66,13 +66,13 @@ class GPregrssor:
             reg = GaussianProcessRegressor()
             reg.fit(x_t,y_t)
             average, std = reg.predict(X[t,:],return_std=True)
-            parameter[t-1,:] = [average,std]
-            alert[t-1] = (np.abs(y[t]-average)<=3*std)
+            #parameter[t-1,:] = [average,std]
+            alert[t-1] = (np.abs(y[t]-average)<=0.25)
 
-        return parameter,alert
+        return alert
 
 
-    def checking(self,alert_signal, sample):
+    def checking(self,alert_signal, usrDecision, groundTruth):
 
         """
         The alert_signal is 0 : means an alarm; 1: meaning normal
@@ -81,21 +81,26 @@ class GPregrssor:
             -- 1   Alert shows normal, real case NO--Wrong
             -- 2   Alert shows NO-normal, real case NO-normal
             -- 3   Alert shows NO-normal, real case Normal
+        Attention: the size of alert_signal will be T-1, and usrDecision and groundTruth will be T
         """
 
-        if alert_signal == 1:
+        result = np.zeros(len(alert_signal))
+        for i in range(len(alert_signal)):
+            if alert_signal[i] == 1:
 
-            if sample[0] == sample[1]:
-                return 0
+                if usrDecision[i+1] == groundTruth[i+1]:
+                    result[i] = 0
+                else:
+                    result[i] = 1
             else:
-                return 1
-        else:
-            if sample[0] != sample[1]:
-                return 2
-            else:
-                return 3
+                if usrDecision[i+1] != groundTruth[i+1]:
+                    result[i] = 2
+                else:
+                    result[i] = 3
 
-    def drawing(self,array):
+        return result
+
+    def drawing(self,array,name):
         """
         The following function will draw two plots
         -- the correlation matrix in global level
@@ -141,9 +146,40 @@ class GPregrssor:
         plt.ylabel('True Condition')
         plt.xlabel('Predicted Condition')
         plt.tight_layout()
-        plt.savefig('cor_par_bad_2.pdf', bbox_inches='tight', format='pdf', dpi=1000)
+        plt.savefig(name, bbox_inches='tight', format='pdf', dpi=1000)
 
         return None
+
+    def error_visu(self,result,name):
+        """
+        The function here will help us visulize the situations of detections and results
+            during the streaming data
+        :param result: Here we suppose that only one participant has involved, containing 0,1,2,3 four states
+        :return:
+
+        """
+        data = result
+        S = np.zeros([len(data), 2])
+        S[:, 1] = data
+        S[:, 0] = np.arange(len(data))
+
+        TP = S[S[:, 1] == 0]
+        FP = S[S[:, 1] == 1]
+        FN = S[S[:, 1] == 3]
+        TN = S[S[:, 1] == 2]
+
+        plt.figure(2)
+        tp, = plt.plot(TP[:, 0], TP[:, 1], '.', color='blue', label='TP')
+        fp, = plt.plot(FP[:, 0], FP[:, 1], '.', color='red', label='FP')
+        fn, = plt.plot(FN[:, 0], FN[:, 1], 'v', color='blue', label='FN')
+        tn, = plt.plot(TN[:, 0], TN[:, 1], 'v', color='red', label='TN')
+
+        plt.legend(handles=[fn, tn, tp, fp],loc=1)
+        plt.ylim([-0.1, 4])
+        plt.xlim([-0.5, len(data) + 0.5])
+        plt.xlabel('Data Streaming')
+        plt.yticks([])
+        plt.savefig(name, bbox_inches='tight', format='pdf', dpi=1000)
 
 
 
@@ -156,17 +192,26 @@ def main():
     data = np.load('/gel/usr/chshu1/Music/CognitiveShadow/data/data_d_co.npy')
 
     print('Testing')
-    cf = GPregrssor(data,dataIndex=range(60))
+    #cf = GPregrssor(data,dataIndex=range(60))
     #XTrain = cf.data[:,3:8]
     #YTrain = cf.data[:,1]
     #YTrue  = cf.data[:,2]
     #predication = cf.OnlineSvmFit(XTrain, YTrain)
-    paramter,alert = cf.OnlineGP(cf.usrOriState[0],cf.usrDecision[0])
+    #paramter,alert = cf.OnlineGP(cf.usrOriState[0],cf.usrDecision[0])
 
-    print(paramter[:,0])
-    print(alert)
+    #print(paramter[:,0])
+    #print(alert)
     #print(np.sum(predication==cf.groundTruth[0])/len(cf.groundTruth[0]))
     #print(np.sum(predication==YTrue)/len(YTrue))
+
+    index = 0
+    cf = GPregrssor(data, dataIndex=range(60))
+    alert = cf.OnlineGP(cf.usrOriState[5], cf.usrDecision[5])
+    evaluation = cf.checking(alert,cf.usrDecision[5],cf.groundTruth[5])
+    name1 = 'RocUsr5.pdf'
+    name2 = 'ErrorUsr5.pdf'
+    cf.drawing(evaluation,name1)
+    cf.error_visu(evaluation,name2)
 
 
 if __name__ == "__main__":
