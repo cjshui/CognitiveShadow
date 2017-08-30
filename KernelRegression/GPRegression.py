@@ -7,7 +7,7 @@
 from __future__ import print_function
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.gaussian_process import GaussianProcessRegressor
+from sklearn.gaussian_process import GaussianProcessRegressor,GaussianProcessClassifier
 import itertools
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -67,7 +67,28 @@ class GPregrssor:
             reg.fit(x_t,y_t)
             average, std = reg.predict(X[t,:],return_std=True)
             #parameter[t-1,:] = [average,std]
-            alert[t-1] = (np.abs(y[t]-average)<=0.25)
+            alert[t-1] = (np.abs(y[t]-average)<=0.4)
+
+        return alert
+
+    def OnlineGPC(self,X,y):
+        """
+
+        :param X: global input
+        :param y: ground truth
+        :return: alert=1 OK , alert=0 senting a alert
+
+        """
+        T = X.shape[0]
+        alert = np.zeros(T-1)
+        clf = GaussianProcessClassifier(multi_class="one_vs_one")
+
+        for t in np.arange(1,T):
+            x_t = X[:t,:]
+            y_t = y[:t]
+            clf.fit(x_t,y_t)
+            score = clf.predict_proba(X[t,:])
+            alert[t-1] = (score >= 0.5)
 
         return alert
 
@@ -85,6 +106,11 @@ class GPregrssor:
         """
 
         result = np.zeros(len(alert_signal))
+        alertNormal = (alert_signal==1)
+        realCase = (usrDecision == groundTruth)
+
+        
+
         for i in range(len(alert_signal)):
             if alert_signal[i] == 1:
 
@@ -192,26 +218,32 @@ def main():
     data = np.load('/gel/usr/chshu1/Music/CognitiveShadow/data/data_d_co.npy')
 
     print('Testing')
-    #cf = GPregrssor(data,dataIndex=range(60))
-    #XTrain = cf.data[:,3:8]
-    #YTrain = cf.data[:,1]
-    #YTrue  = cf.data[:,2]
-    #predication = cf.OnlineSvmFit(XTrain, YTrain)
-    #paramter,alert = cf.OnlineGP(cf.usrOriState[0],cf.usrDecision[0])
 
-    #print(paramter[:,0])
-    #print(alert)
-    #print(np.sum(predication==cf.groundTruth[0])/len(cf.groundTruth[0]))
-    #print(np.sum(predication==YTrue)/len(YTrue))
 
+    Total = 60
+    cf = GPregrssor(data, dataIndex=range(Total))
+
+    ## Total cases
+    # evaluation  = []
+    # for index in range(Total):
+    #     if index not in cf.problemIndx:
+    #         alert = cf.OnlineGP(cf.usrOriState[index], cf.usrDecision[index])
+    #         eva = cf.checking(alert,cf.usrDecision[index],cf.groundTruth[index])
+    #         evaluation.append(eva)
+    # name1 = 'RocUsrTotal04.pdf'
+    # cf.drawing(evaluation,name1)
+    # cf.error_visu(evaluation,name2)
+
+
+    ## Individual case
     index = 0
-    cf = GPregrssor(data, dataIndex=range(60))
-    alert = cf.OnlineGP(cf.usrOriState[5], cf.usrDecision[5])
-    evaluation = cf.checking(alert,cf.usrDecision[5],cf.groundTruth[5])
-    name1 = 'RocUsr5.pdf'
-    name2 = 'ErrorUsr5.pdf'
+    alert = cf.OnlineGPC(cf.usrOriState[index],cf.usrDecision[index])
+    evaluation = cf.checking(alert,cf.usrDecision[index],cf.groundTruth[index])
+    name1 = 'usr1GPC.pdf'
+    name2 = 'StreamUsr1GPC.pdf'
     cf.drawing(evaluation,name1)
     cf.error_visu(evaluation,name2)
+
 
 
 if __name__ == "__main__":
