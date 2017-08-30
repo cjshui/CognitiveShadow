@@ -45,7 +45,7 @@ class GPregrssor:
 
 
 
-    def OnlineGP(self,X,y):
+    def OnlineGP(self,X,y,shift=1):
         """
         Online Gaussian Process regression
 
@@ -57,9 +57,9 @@ class GPregrssor:
 
         T = X.shape[0]
         #parameter = np.zeros([T-1,2])
-        alert = np.zeros(T-1)
+        alert = np.zeros(T-shift)
 
-        for t in np.arange(1,T):
+        for t in np.arange(shift,T):
             x_t = X[:t,:]
             y_t = y[:t]
 
@@ -67,11 +67,11 @@ class GPregrssor:
             reg.fit(x_t,y_t)
             average, std = reg.predict(X[t,:],return_std=True)
             #parameter[t-1,:] = [average,std]
-            alert[t-1] = (np.abs(y[t]-average)<=0.4)
+            alert[t-shift] = (np.abs(y[t]-average)<=0.4)
 
         return alert
 
-    def OnlineGPC(self,X,y):
+    def OnlineGPC(self,X,y,shift=1):
         """
 
         :param X: global input
@@ -80,20 +80,20 @@ class GPregrssor:
 
         """
         T = X.shape[0]
-        alert = np.zeros(T-1)
-        clf = GaussianProcessClassifier(multi_class="one_vs_one")
+        alert = np.zeros(T-shift)
+        clf = GaussianProcessClassifier()
 
-        for t in np.arange(1,T):
+        for t in np.arange(shift,T):
             x_t = X[:t,:]
             y_t = y[:t]
             clf.fit(x_t,y_t)
             score = clf.predict_proba(X[t,:])
-            alert[t-1] = (score >= 0.5)
+            alert[t-shift] = (score[0][int(y[t]-1)] >= 0.5)
 
         return alert
 
 
-    def checking(self,alert_signal, usrDecision, groundTruth):
+    def checking(self,alert_signal, usrDecision, groundTruth,shift=1):
 
         """
         The alert_signal is 0 : means an alarm; 1: meaning normal
@@ -106,20 +106,16 @@ class GPregrssor:
         """
 
         result = np.zeros(len(alert_signal))
-        alertNormal = (alert_signal==1)
-        realCase = (usrDecision == groundTruth)
-
-        
 
         for i in range(len(alert_signal)):
             if alert_signal[i] == 1:
 
-                if usrDecision[i+1] == groundTruth[i+1]:
+                if usrDecision[i+shift] == groundTruth[i+shift]:
                     result[i] = 0
                 else:
                     result[i] = 1
             else:
-                if usrDecision[i+1] != groundTruth[i+1]:
+                if usrDecision[i+shift] != groundTruth[i+shift]:
                     result[i] = 2
                 else:
                     result[i] = 3
@@ -237,10 +233,11 @@ def main():
 
     ## Individual case
     index = 0
-    alert = cf.OnlineGPC(cf.usrOriState[index],cf.usrDecision[index])
-    evaluation = cf.checking(alert,cf.usrDecision[index],cf.groundTruth[index])
-    name1 = 'usr1GPC.pdf'
-    name2 = 'StreamUsr1GPC.pdf'
+    shift = 10
+    alert = cf.OnlineGP(cf.usrOriState[index],cf.usrDecision[index],shift=shift)
+    evaluation = cf.checking(alert,cf.usrDecision[index],cf.groundTruth[index],shift=shift)
+    name1 = 'usr1GP.pdf'
+    name2 = 'StreamUsr1GP.pdf'
     cf.drawing(evaluation,name1)
     cf.error_visu(evaluation,name2)
 
