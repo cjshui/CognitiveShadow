@@ -63,7 +63,7 @@ class GPregrssor:
             x_t = X[:t,:]
             y_t = y[:t]
 
-            reg = GaussianProcessRegressor()
+            reg = GaussianProcessRegressor(normalize_y=True)
             reg.fit(x_t,y_t)
             average, std = reg.predict(X[t,:],return_std=True)
             #parameter[t-1,:] = [average,std]
@@ -236,8 +236,8 @@ def main():
     shift = 10
     alert = cf.OnlineGP(cf.usrOriState[index],cf.usrDecision[index],shift=shift)
     evaluation = cf.checking(alert,cf.usrDecision[index],cf.groundTruth[index],shift=shift)
-    name1 = 'usr1GP.pdf'
-    name2 = 'StreamUsr1GP.pdf'
+    name1 = 'test1GP.pdf'
+    name2 = 'Streamtest1GP.pdf'
     cf.drawing(evaluation,name1)
     cf.error_visu(evaluation,name2)
 

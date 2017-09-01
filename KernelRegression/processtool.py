@@ -4,7 +4,50 @@
 
 from __future__ import print_function
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
+
+
+
+def preproIRIS():
+    """
+
+    data description: the iris data has 149 samples, three classes: Iris-virginica,Iris-versicolor,Iris-setosa
+    iris data-set 149 * 5
+
+    :return:
+    """
+    file = pd.read_csv('/gel/usr/chshu1/Music/CognitiveShadow/data/iris.data',',')
+
+    iris = np.array(file.values)
+
+
+    np.random.shuffle(iris)
+
+    label_str = iris[:,4]
+    label = np.zeros(np.shape(label_str))
+    feature = iris[:,:4]
+    # normalization
+    # feature = feature/np.max(feature,axis=0)
+    label[label_str=='Iris-setosa']= 1
+    label[label_str=='Iris-versicolor']= 2
+    label[label_str=='Iris-virginica']= 3
+    return feature, label
+
+
+def preprohardware():
+    """
+    The pre processing procedure for hardware testing
+    :return:
+    """
+    file = pd.read_csv('/gel/usr/chshu1/Music/CognitiveShadow/data/machine.data',',')
+    machine = np.array(file.values)
+
+    result = machine[:,8]
+    observation = machine[:,2:8]
+
+    return observation,result
+
 
 
 def blurringDis(label,rate):
@@ -23,4 +66,32 @@ def blurringDis(label,rate):
 
     return labelBlur
 
-def blurringCon(value,rate):
+
+def blurringCon(value,rate,degree):
+    """
+
+    :param value: the continuous values
+    :param rate: blurring rate
+    :param degree: the noise level e.g x + degree *randn(..)
+    :return: the blurring value
+
+    """
+
+    ## In the regression model, the noise means the adversial values
+    flag = np.random.choice([0, 1], size=len(value), p=[rate, 1-rate])
+    new_label = value.copy()
+    new_label[flag == 0] += degree * np.random.randn()
+
+    return new_label
+
+
+# observation, trueLabel = preprohardware()
+# noiseLabel = blurringCon(trueLabel,0.15,50)
+#
+# print(trueLabel)
+# print(noiseLabel)
+
+
+
+
+

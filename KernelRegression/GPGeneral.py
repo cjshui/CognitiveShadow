@@ -10,7 +10,7 @@
 from __future__ import print_function
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.gaussian_process import GaussianProcessRegressor,GaussianProcessClassifier
+from sklearn.gaussian_process import GaussianProcessRegressor
 import itertools
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -46,10 +46,10 @@ class GPregression:
             x_t = X[:t, :]
             y_t = y[:t]
 
-            reg = GaussianProcessRegressor()
+            reg = GaussianProcessRegressor(kernel=self.kernel,normalize_y=True)
             reg.fit(x_t, y_t)
             average, std = reg.predict(X[t, :], return_std=True)
-            alert[t - shift] = (np.abs(y[t] - average) <= 0.4)
+            alert[t - shift] = (np.abs(y[t] - average) <= 3*std)
 
         return alert
 
@@ -70,11 +70,15 @@ class GPregression:
         for i in range(len(alert_signal)):
             if alert_signal[i] == 1:
 
+
                 if usrDecision[i+shift] == groundTruth[i+shift]:
+
                     result[i] = 0
                 else:
                     result[i] = 1
             else:
+
+
                 if usrDecision[i+shift] != groundTruth[i+shift]:
                     result[i] = 2
                 else:
@@ -165,7 +169,20 @@ class GPregression:
 
 
 
-
+# d = np.load('/gel/usr/chshu1/Music/CognitiveShadow/data/data_d_co.npy')
+# current_seg = d[d[:, 0] == 101]
+# X_train = current_seg[:,3:8]
+# Y_train = current_seg[:,1]
+# Y_true =  current_seg[:,2]
+#
+# shift = 10
+# cf = GPregression(kernelParameter=None)
+# alert = cf.OnlineGP(X_train,Y_train,shift=shift)
+# evaluation = cf.checking(alert,Y_train,Y_true,shift=shift)
+# name1 = 'test1GP.pdf'
+# name2 = 'Streamtest1GP.pdf'
+# cf.drawing(evaluation,name1)
+# cf.error_visu(evaluation,name2)
 
 
 
