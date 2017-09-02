@@ -10,7 +10,7 @@
 from __future__ import print_function
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.gaussian_process import GaussianProcessRegressor
+from sklearn.gaussian_process import GaussianProcessRegressor,GaussianProcessClassifier
 import itertools
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -49,11 +49,33 @@ class GPregression:
             reg = GaussianProcessRegressor(kernel=self.kernel,normalize_y=True)
             reg.fit(x_t, y_t)
             average, std = reg.predict(X[t, :], return_std=True)
-            alert[t - shift] = (np.abs(y[t] - average) <= 3*std)
+            alert[t - shift] = (np.abs(y[t] - average) <= 4*std)
+            # alert[t-shift] = (y[t] == np.around(average))
 
         return alert
 
-    def checking(self,alert_signal, usrDecision, groundTruth,shift=1):
+    def OnlineGPC(self,X,y,shift=1):
+        """
+
+        :param X: global input
+        :param y: ground truth
+        :return: alert=1 OK , alert=0 senting a alert
+
+        """
+        T = X.shape[0]
+        alert = np.zeros(T-shift)
+        clf = GaussianProcessClassifier()
+
+        for t in np.arange(shift,T):
+            x_t = X[:t,:]
+            y_t = y[:t]
+            clf.fit(x_t,y_t)
+            score = clf.predict_proba(X[t,:])
+            alert[t-shift] = (score[0][int(y[t]-1)] == np.max(score))
+
+        return alert
+
+    def checking(self,alert_signal, usrDecision, groundTruth, shift=1):
 
         """
         The alert_signal is 0 : means an alarm; 1: meaning normal
@@ -169,20 +191,7 @@ class GPregression:
 
 
 
-# d = np.load('/gel/usr/chshu1/Music/CognitiveShadow/data/data_d_co.npy')
-# current_seg = d[d[:, 0] == 101]
-# X_train = current_seg[:,3:8]
-# Y_train = current_seg[:,1]
-# Y_true =  current_seg[:,2]
-#
-# shift = 10
-# cf = GPregression(kernelParameter=None)
-# alert = cf.OnlineGP(X_train,Y_train,shift=shift)
-# evaluation = cf.checking(alert,Y_train,Y_true,shift=shift)
-# name1 = 'test1GP.pdf'
-# name2 = 'Streamtest1GP.pdf'
-# cf.drawing(evaluation,name1)
-# cf.error_visu(evaluation,name2)
+
 
 
 
