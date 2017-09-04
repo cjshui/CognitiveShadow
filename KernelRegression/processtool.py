@@ -5,7 +5,7 @@
 from __future__ import print_function
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
+from sklearn.preprocessing import OneHotEncoder,LabelEncoder
 
 
 
@@ -45,8 +45,22 @@ def preprohardware():
 
     result = machine[:,8]
     observation = machine[:,2:8]
+    # observation = observation/np.max(observation,axis=0)
 
     return observation,result
+
+
+def preprowine():
+
+    file = pd.read_csv('/gel/usr/chshu1/Music/CognitiveShadow/data/wine.data', ',')
+    wine = np.array(file.values)
+    np.random.shuffle(wine)
+    result = wine[:, 0]
+    observation = wine[:, 1:]
+
+    return observation, result
+
+
 
 
 
@@ -80,7 +94,7 @@ def blurringCon(value,rate,degree):
     ## In the regression model, the noise means the adversial values
     flag = np.random.choice([0, 1], size=len(value), p=[rate, 1-rate])
     new_label = value.copy()
-    new_label[flag == 0] += degree * np.random.randn()
+    new_label[flag == 0] += (2*np.random.binomial(1, 0.5)-1) * degree * (1+np.random.randn())
 
     return new_label
 
