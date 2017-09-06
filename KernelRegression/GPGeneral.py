@@ -73,7 +73,10 @@ class GPregression:
             clf.fit(x_t,y_t)
             score = clf.predict_proba(X[t,:])
             # print(score)
-            alert[t-shift] = (score[0][int(y[t]-1)] >= 1/np.max(y))
+            if np.max(y)>=3:
+                alert[t - shift] = (score[0][int(y[t] - 1)] >= 1 / np.max(y))
+            else:
+                alert[t - shift] = (score[0][int(y[t] - 1)] >= 0.5)
 
         return alert
 
@@ -211,8 +214,11 @@ class LogisticRegression:
         :return:
         """
 
+        if np.max(y) >=3 :
+            clf = linear_model.LogisticRegression(multi_class='multinomial',solver='sag')
+        else:
+            clf = linear_model.LogisticRegression()
 
-        clf = linear_model.LogisticRegression(multi_class='multinomial',solver='sag')
         T = X.shape[0]
         alert = np.zeros(T - shift)
 
@@ -222,7 +228,12 @@ class LogisticRegression:
 
             clf.fit(x_t,y_t)
             score = clf.predict_proba(X[t,:])
-            alert[t - shift] = (score[0][int(y[t] - 1)] >= 1 / np.max(y))
+
+            if np.max(y)>=3:
+                alert[t - shift] = (score[0][int(y[t] - 1)] >= 1 / np.max(y))
+            else:
+                alert[t - shift] = (score[0][int(y[t] - 1)] >= 0.5)
+
 
         return alert
 
